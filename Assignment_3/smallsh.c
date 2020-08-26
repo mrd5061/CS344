@@ -28,25 +28,18 @@ int fgOnly=0;
  * only mode, the function switches to normal mode and informs the user that 
  * they have exited foreground-only mode. 
  */ 
-void sigtstpFunc(int signo)
-{
+void sigtstpFunc(int signo){
 	//If we are in normal mode
-	if (fgOnly == 0)
-	{
+	if (fgOnly == 0){
 		fgOnly=1;	
-		//print message
 		char* fgMessage = "\nEntering foreground-only mode (& is now ignored)\n: ";
-
 		write(STDOUT_FILENO, fgMessage, 52);
 		fflush(stdout);
 		
 	}
 	//if we are in foreground-only mode
-	else
-	{
-		//switch flag
+	else{
 		fgOnly=0;
-		//print message
 		char* fgMessage = "\nExiting foreground-only mode\n: ";
 		write(STDOUT_FILENO, fgMessage, 32);
 		fflush(stdout);
@@ -59,19 +52,14 @@ void sigtstpFunc(int signo)
  * exit status or the terminating signal of the last forground command. If the
  * function is run before any foreground command is run, it will return 0
  */
-void getStatus(int status)
-{
+void getStatus(int status){
 	//If the child process was terminated normally
-	if(WIFEXITED(status))
-	{
-		//print the exit status value of the child process
+	if(WIFEXITED(status)){
 		printf("exit value %d \n", WEXITSTATUS(status));
 		fflush(stdout);
 	}
 	//otherwise, the child was terminated by a signal.
-	else
-	{
-		//print the signal that terminated the child
+	else{
 		printf("terminated by signal %d\n", status);
 		fflush(stdout);
 	}
@@ -84,26 +72,21 @@ void getStatus(int status)
  * the directory to the one specified in argArray[1]
  */
 
-void changeDirectory(char** argArray)
-{
+void changeDirectory(char** argArray){
 	char* dir;
 	//If the user did not specify a directory
-	if(argArray[1]== NULL)
-	{
-		//set dir to the HOME environment variable
+	if(argArray[1]== NULL){
 		dir = getenv("HOME");	
 		chdir(dir);
 	}	
 	//otherwise, set dir to the first argument after "cd"
-	else
-	{
+	else{
 		dir = argArray[1];
 	}
 
 	//if the change directory command was not successfull print an error
 	//message. 
-	if (chdir(dir) != 0)
-	{
+	if (chdir(dir) != 0){
 		printf("Invalid directory name.\n"); 
 	}
 }
@@ -114,48 +97,39 @@ void changeDirectory(char** argArray)
  * data read.
  */ 
 
-void expandPid(char* token, int shPid)
-{
-	//set up necessary variables and strings
+void expandPid(char* token, int shPid){
+	
 	char stringPid[255];
 	char buffer[BUFFER_LIM];
 	char* copy = token;
-
-	//convert shell PID to a string
+	
 	sprintf(stringPid, "%d", shPid);
-
-	//search through the string looking for a substring "$$"
-	while((copy = strstr(copy,"$$")))
-	{
+	
+	while((copy = strstr(copy,"$$"))){
 		//copy the string up to the point of the $$ occurance
 		strncpy(buffer, token, copy-token);
 		buffer[copy-token]='\0';
-
-		//append the PID to the end of the sub-string
+	
 		strcat(buffer, stringPid);
 		strcat(buffer, copy + strlen("$$"));
 		
-		//copy the concatenated buffer to the original token string.
 		strcpy(token, buffer);
 		copy++;
 	}
 	
 }
 
-void killBackground(pid_t backPids[], int numPids)
-{
+void killBackground(pid_t backPids[], int numPids){
 	int i=0;
 
-	while(i<numPids)
-	{
+	while(i<numPids){
 		kill(backPids[i], SIGTERM);
 		i++;
 	}
 }
 
 
-int main()
-{
+int main(){
 	//string for user input
 	char* inputLine= malloc(BUFFER_LIM);
 
@@ -189,11 +163,10 @@ int main()
 	sigfillset(&sigtstpAct.sa_mask);
 	sigtstpAct.sa_flags=SA_RESTART;
 	sigaction(SIGTSTP, &sigtstpAct, NULL);
-	while(1)
-	{	
+	
+	while(1){	
 		//set the background flag to 0
-		background =0;
-		
+		background =0;		
 
 		//print the shell prompt
 		printf(": ");
@@ -210,11 +183,9 @@ int main()
 
 		curToken= strtok(inputLine, " \n");
 	
-		while(curToken != NULL)
-		{
+		while(curToken != NULL)	{
 			//handle output redirection
-			if(strcmp(curToken, ">") == 0)
-			{
+			if(strcmp(curToken, ">") == 0){
 				//get the output file name and store it
 				curToken=(strtok(NULL, " \n"));
 				outputFile = strdup(curToken);
@@ -222,8 +193,7 @@ int main()
 				curToken = strtok(NULL, " \n");
 			}
 			//handle input file redirection
-			else if (strcmp(curToken, "<") ==0)
-			{
+			else if (strcmp(curToken, "<") ==0){
 				//get input file name and store it
 				curToken=(strtok(NULL, " \n"));
 				inputFile = strdup(curToken);
@@ -232,11 +202,9 @@ int main()
 			}
 			
 			//handle expansion 
-			else 
-			{
+			else {
 				//check if part of the token contains $$
-				if(strstr(curToken, "$$") != NULL)
-				{
+				if(strstr(curToken, "$$") != NULL){
 					//get the shell pid
 					int shPid = getpid();
 					//convert the $$ to the shell Pid.
@@ -257,18 +225,16 @@ int main()
 		otherwise it will catch errantn ampersands 
 		inside echo comments and interpret them inccorrectly.*/
 		
-		//decrement the argument iterator
+		
 		args--;
 		//make sure the array position is not null and the final 
 		//argument is a "&"
-		if(argArray[args] != NULL && strcmp(argArray[args],"&")==0)
-		{
+		if(argArray[args] != NULL && strcmp(argArray[args],"&")==0){
 			//remove the & in argument array. If this doesn't happen
 			//sleep commands will return an error.
 			argArray[args]='\0';
 			//if background commands are allowed, set the background flag.
-			if(fgOnly==0)
-			{
+			if(fgOnly==0){
 				background=1;
 			}
 		}
@@ -280,43 +246,35 @@ int main()
 		//Begin checking the argArray for built in commands
 		
 		//Check if the user entered a blank line or a comment
-		if(argArray[0] == NULL || strncmp(argArray[0],"#",1)==0)
-		{
-			//do nothing
-			
+		if(argArray[0] == NULL || strncmp(argArray[0],"#",1)==0){
+			//do nothing			
 		}
 
 		//if the user entered cd
-		else if (strcmp(argArray[0],"cd")==0)
-		{
+		else if (strcmp(argArray[0],"cd")==0){
 			//call changeDir 
-			changeDirectory(argArray);
-			
+			changeDirectory(argArray);			
 		}
 
 		//if the user entered exit
-		else if(strcmp(argArray[0],"exit")==0)
-		{
+		else if(strcmp(argArray[0],"exit")==0){
 			//clean up any background processes exit the shell
 			killBackground(backPids, numPids);
 			exit(EXIT_SUCCESS);
 		}
 
 		//if the user entered status
-		else if(strcmp(argArray[0],"status")==0)
-		{
+		else if(strcmp(argArray[0],"status")==0){
 			//call getStatus
 			getStatus(status);
 			fflush(stdout);
 		}
 
 		//otherwise, execute command by forking a child process
-		else	
-		{
+		else{
 			pid = fork();
 			//if there was an error forking the child process
-			if(pid<0)
-			{
+			if(pid<0){
 				//print an error message, clean up and exit
 				perror("Hull Breach!/n");
 				killBackground(backPids, numPids);
@@ -324,11 +282,9 @@ int main()
 				break;
 			}
 			//instructions for the child process
-			else if(pid==0)
-			{
+			else if(pid==0){
 				//if this is a foreground process
-				if(background==0)
-				{
+				if(background==0){
 					//reset the sigint handler so the 
 					//child process can be killed.
 					sigintAct.sa_handler = SIG_DFL;
@@ -336,23 +292,20 @@ int main()
 				}
 
 				//if input redirection was specified
-				if(inputFile != NULL)
-				{
+				if(inputFile != NULL){
 					//open in read only mode
 					myFile=open(inputFile, O_RDONLY);
 
 					//if there is an error opening the file,
 					//display a message and exit.
-					if(myFile ==-1)
-					{
+					if(myFile ==-1){
 						fprintf(stderr, "cannot open file %s for input\n", inputFile);
 						fflush(stdout);
 						exit(1);
 					}
 					//redirect input and print a message if
 					//an error occurs
-					else if(dup2(myFile,0)== -1)
-					{
+					else if(dup2(myFile,0)== -1){
 						fprintf(stderr, "error in redirecting input\n");
 						fflush(stdout);
 						exit(1);
@@ -360,24 +313,21 @@ int main()
 					close(myFile);
 				}
 				//if output redirection was specified
-				if(outputFile!= NULL)
-				{
+				if(outputFile!= NULL){
 					//open the file for write only, to create the
 					//file if it doesn't exist, and to over write
 					//the file if it does exist.
 					myFile = open(outputFile, O_WRONLY|O_CREAT|O_TRUNC, 0644);
 					//print an error message if there was an error
 					//opening the file.
-					if(myFile==-1)
-					{
+					if(myFile==-1){
 						fprintf(stderr, "cannot open %s for output\n", outputFile);
 						fflush(stdout);
 						exit(1);
 					}			
 					//otherwise, redirect the input and print
 					//an error message if any occur
-					else if(dup2(myFile,1)== -1)
-					{
+					else if(dup2(myFile,1)== -1){
 						fprintf(stderr, "error in redirecting output\n");
 						fflush(stdout);
 						exit(1);
@@ -386,8 +336,7 @@ int main()
 						close(myFile);
 				}
 				//Check if this is a background process
-				if(background==1)
-				{
+				if(background==1){
 					//if no input was specified
 					if (inputFile==NULL)
 					{	
@@ -411,22 +360,19 @@ int main()
 						close(myFile);
 					}
 					//if no output file was specified
-					if (outputFile==NULL)
-					{
+					if (outputFile==NULL){
 						//redirec the output to /dev/null so 
 						//that the input does not print
 						//to the terminal and check for errors
 
 						myFile = open("/dev/null", O_WRONLY);
-						if(myFile==-1)
-						{
+						if(myFile==-1){
 							fprintf(stderr, "cannot open /dev/null for output\n");
 							fflush(stdout);
 							exit(1);
 						}
 						//write the output and check for errors
-						else if(dup2(myFile,1)==-1)
-						{
+						else if(dup2(myFile,1)==-1){
 							fprintf(stderr, "error in redirecting output\n");
 							fflush(stdout);
 							exit(1);
@@ -436,34 +382,28 @@ int main()
 				}
 				//execute the command, and print an error message
 				//if the command was not found.
-				if(execvp(argArray[0], argArray))
-				{
+				if(execvp(argArray[0], argArray)){
 					fprintf(stderr, "%s: no such file or directory\n", argArray[0]);
 					fflush(stdout);
 					exit(1);
 				}
 			}
 			//instructions for the parent process
-			else
-			{
+			else{
 				//if this is a foreground process
-				if(background==0)
-				{
-					//wait for the process to complete
-				
+				if(background==0){
+					//wait for the process to complete				
 					pid=waitpid(pid, &status, 0);
 					
 					//if process was terminated, print an error 
 					//message with terminating signal
-					if(WIFSIGNALED(status))
-					{
+					if(WIFSIGNALED(status)){
 						printf("terminated by signal %d\n", status);
 						fflush(stdout);
 					}
 				}
 				//if this is a background process
-				if(background == 1)
-				{
+				if(background == 1){
 					//do not wait for the process to complete
 					waitpid(pid, &status, WNOHANG);
 					//add PID to background PID array for later
@@ -483,8 +423,7 @@ int main()
 
 		//clean up the argument array for the next command
 		int x=0;
-		while(x<args)
-		{
+		while(x<args){
 			argArray[x]=NULL;
 			x++;
 		}
@@ -498,26 +437,20 @@ int main()
 
 		//check for any background processes that have completed
 		pid=waitpid(-1, &status, WNOHANG);
-		while(pid>0)
-		{
+		while(pid>0){
 			//print the PID and exit value if the process ended normally
-			if (WIFEXITED(status))
-			{
+			if (WIFEXITED(status)){
 				printf("background pid %d is done: exit value %d\n", pid,status);
 				fflush(stdout);
 			}
 			//print the PID and signal if the process was terminated
-			else
-			{
+			else{
 				printf("background pid %d is done: terminated by singal %d\n", pid, status);
 				fflush(stdout);
 			}
 			//continue checking
-			pid = waitpid(-1,&status, WNOHANG);
-				
-				
+			pid = waitpid(-1,&status, WNOHANG);				
 		}
-
 	}
 	return 0;
 }
